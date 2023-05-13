@@ -92,6 +92,7 @@ pub fn abi_from_file(path: impl AsRef<Path>) -> TokenStream {
                 &self,
                 func: &'static str,
                 params: impl ic_web3::contract::tokens::Tokenize + Send,
+                key_name: std::string::String,
                 options: Option<::ic_web3::contract::Options>,
                 confirmations: Option<usize>,
             ) -> Result<SolidityBindgenProvider::Out, ::ic_web3::Error> {
