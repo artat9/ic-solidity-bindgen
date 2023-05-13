@@ -56,7 +56,7 @@ pub fn abi_from_file(path: impl AsRef<Path>) -> TokenStream {
         // "hygenic" ident for generic
         pub struct #struct_name<SolidityBindgenProvider> {
             provider: ::std::sync::Arc<SolidityBindgenProvider>,
-            pub address: ::web3::types::Address,
+            pub address: ::ic_web3::types::Address,
         }
 
         impl<SolidityBindgenProvider> ::std::clone::Clone for #struct_name<SolidityBindgenProvider> {
@@ -69,7 +69,7 @@ pub fn abi_from_file(path: impl AsRef<Path>) -> TokenStream {
         }
 
         impl<SolidityBindgenProvider> #struct_name<SolidityBindgenProvider> {
-            pub fn new<Context>(address: ::web3::types::Address, context: &Context) -> Self where Context: ::solidity_bindgen::Context<Provider = SolidityBindgenProvider> {
+            pub fn new<Context>(address: ::ic_web3::types::Address, context: &Context) -> Self where Context: ::solidity_bindgen::Context<Provider = SolidityBindgenProvider> {
                 // Embed ABI into the program
                 let abi = #abi_str;
 
@@ -91,10 +91,10 @@ pub fn abi_from_file(path: impl AsRef<Path>) -> TokenStream {
             pub async fn send(
                 &self,
                 func: &'static str,
-                params: impl web3::contract::tokens::Tokenize + Send,
-                options: Option<::web3::contract::Options>,
+                params: impl ic_web3::contract::tokens::Tokenize + Send,
+                options: Option<::ic_web3::contract::Options>,
                 confirmations: Option<usize>,
-            ) -> Result<SolidityBindgenProvider::Out, ::web3::Error> {
+            ) -> Result<SolidityBindgenProvider::Out, ::ic_web3::Error> {
                 self.provider.send(func, params, options, confirmations).await
             }
 
@@ -112,14 +112,14 @@ pub fn abi_from_file(path: impl AsRef<Path>) -> TokenStream {
 /// Returns the tokens for the type, as well as the level of nesting of the tuples for a hack.
 fn param_type(kind: &ParamType) -> (TokenStream, usize) {
     match kind {
-        ParamType::Address => (quote! { ::web3::types::Address }, 0),
+        ParamType::Address => (quote! { ::ic_web3::types::Address }, 0),
         ParamType::Bytes => (quote! { ::std::vec::Vec<u8> }, 0),
         ParamType::Int(size) => match size {
             256 => (quote! { ::solidity_bindgen::internal::Unimplemented }, 0),
             _ => (ident(format!("i{}", size)).to_token_stream(), 0),
         },
         ParamType::Uint(size) => match size {
-            256 => (quote! { ::web3::types::U256 }, 0),
+            256 => (quote! { ::ic_web3::types::U256 }, 0),
             _ => {
                 let name = ident(format!("u{}", size));
                 (quote! { #name }, 0)
@@ -253,7 +253,7 @@ pub fn fn_from_abi(function: &Function) -> TokenStream {
     };
 
     quote! {
-        pub async fn #rust_name(&self, #(#params_in),*) -> ::std::result::Result<#ok, ::web3::Error> {
+        pub async fn #rust_name(&self, #(#params_in),*) -> ::std::result::Result<#ok, ::ic_web3::Error> {
             #fn_call
         }
     }
