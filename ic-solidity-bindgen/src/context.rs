@@ -1,12 +1,12 @@
 use crate::SafeSecretKey;
 use crate::Web3Provider;
+use ic_web3::api::Eth;
+use ic_web3::transports::ICHttp;
+use ic_web3::types::Address;
+use ic_web3::Web3;
 use secp256k1::key::SecretKey;
 use std::convert::TryInto as _;
 use std::sync::Arc;
-use web3::api::Eth;
-use web3::transports::Http;
-use web3::types::Address;
-use web3::Web3;
 
 /// Common data associated with multiple contracts.
 #[derive(Clone)]
@@ -23,7 +23,7 @@ struct Web3ContextInner {
     // We are not expecting to interact with the chain frequently,
     // and the websocket transport has problems with ping.
     // So, the Http transport seems like the best choice.
-    eth: Eth<Http>,
+    eth: Eth<ICHttp>,
 }
 
 impl Web3Context {
@@ -31,8 +31,8 @@ impl Web3Context {
         url: &str,
         from: Address,
         secret_key: &SecretKey,
-    ) -> Result<Self, web3::error::Error> {
-        let transport = Http::new(url)?;
+    ) -> Result<Self, ic_web3::error::Error> {
+        let transport = ICHttp::new(url, None)?;
         let web3 = Web3::new(transport);
         let eth = web3.eth();
         let inner = Web3ContextInner {
@@ -51,7 +51,7 @@ impl Web3Context {
         &self.0.secret_key
     }
 
-    pub(crate) fn eth(&self) -> Eth<Http> {
+    pub(crate) fn eth(&self) -> Eth<ICHttp> {
         self.0.eth.clone()
     }
 }

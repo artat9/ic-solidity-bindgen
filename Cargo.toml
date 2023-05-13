@@ -1,6 +1,6 @@
 [workspace]
 
 members = [
-    "solidity-bindgen",
-    "solidity-bindgen-macros",
+    "ic-solidity-bindgen",
+    "ic-solidity-bindgen-macros",
 ]

@@ -13,6 +13,6 @@ pub use providers::{CallProvider, SendProvider};
 pub use web3_provider::Web3Provider;
 
 // Re-export the macros
-pub use solidity_bindgen_macros::*;
+pub use ic_solidity_bindgen_macros::*;
 
 pub use context::{Context, Web3Context};

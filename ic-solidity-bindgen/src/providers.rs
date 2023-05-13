@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use web3::contract::tokens::{Detokenize, Tokenize};
-use web3::contract::Options;
-use web3::Error;
+use ic_web3::contract::tokens::{Detokenize, Tokenize};
+use ic_web3::contract::Options;
+use ic_web3::Error;
 
 #[async_trait]
 pub trait CallProvider {
@@ -21,5 +21,5 @@ pub trait SendProvider {
         params: Params,
         options: Option<Options>,
         confirmations: Option<usize>,
-    ) -> Result<Self::Out, web3::Error>;
+    ) -> Result<Self::Out, ic_web3::Error>;
 }

@@ -1,17 +1,18 @@
 use crate::context::Web3Context;
 use crate::providers::{CallProvider, SendProvider};
 use async_trait::async_trait;
+use ic_web3::contract::tokens::{Detokenize, Tokenize};
+use ic_web3::contract::Contract;
+use ic_web3::contract::Options;
+use ic_web3::ic::{get_public_key, pubkey_to_address, KeyInfo};
+use ic_web3::transports::ICHttp;
+use ic_web3::types::{Address, TransactionReceipt};
 use std::marker::Unpin;
-use web3::contract::tokens::{Detokenize, Tokenize};
-use web3::contract::Contract;
-use web3::contract::Options;
-use web3::transports::Http;
-use web3::types::{Address, TransactionReceipt};
 
 /// Mostly exists to map to the new futures.
 /// This is the "untyped" API which the generated types will use.
 pub struct Web3Provider {
-    contract: Contract<Http>,
+    contract: Contract<ICHttp>,
     context: Web3Context,
 }
 
@@ -21,7 +22,7 @@ impl CallProvider for Web3Provider {
         &self,
         name: &'static str,
         params: Params,
-    ) -> Result<O, web3::Error> {
+    ) -> Result<O, ic_web3::Error> {
         match self
             .contract
             .query(
@@ -35,7 +36,7 @@ impl CallProvider for Web3Provider {
         {
             Ok(v) => Ok(v),
             Err(e) => match e {
-                web3::contract::Error::Api(e) => Err(e),
+                ic_web3::contract::Error::Api(e) => Err(e),
                 // The other variants InvalidOutputType and Abi should be
                 // prevented by the code gen. It is useful to convert the error
                 // type to be restricted to the web3::Error type for a few
@@ -52,6 +53,28 @@ impl CallProvider for Web3Provider {
     }
 }
 
+pub fn default_derivation_key() -> Vec<u8> {
+    ic_cdk::id().as_slice().to_vec()
+}
+
+async fn public_key() -> Result<Vec<u8>, String> {
+    get_public_key(
+        None,
+        vec![default_derivation_key()],
+        // tmp: this should be a random string
+        "dfx_test_key".to_string(),
+    )
+    .await
+}
+
+fn to_ethereum_address(pub_key: Vec<u8>) -> Result<Address, String> {
+    pubkey_to_address(&pub_key)
+}
+
+pub async fn ethereum_address() -> Result<Address, String> {
+    let pub_key = public_key().await?;
+    to_ethereum_address(pub_key)
+}
 #[async_trait]
 impl SendProvider for Web3Provider {
     type Out = TransactionReceipt;
@@ -61,7 +84,9 @@ impl SendProvider for Web3Provider {
         params: Params,
         options: Option<Options>,
         confirmations: Option<usize>,
-    ) -> Result<Self::Out, web3::Error> {
+    ) -> Result<Self::Out, ic_web3::Error> {
+        let canister_addr = ethereum_address().await?;
+
         self.contract
             .signed_call_with_confirmations(
                 func,
@@ -70,6 +95,7 @@ impl SendProvider for Web3Provider {
                     None => Default::default(),
                     Some(options) => options,
                 },
+                hex::encode(canister_addr),
                 match confirmations {
                     // Num confirmations. From a library standpoint, this should be
                     // a parameter of the function. Choosing a correct value is very
@@ -81,7 +107,13 @@ impl SendProvider for Web3Provider {
                     None => 24,
                     Some(confirmations) => confirmations,
                 },
-                self.context.secret_key(),
+                KeyInfo {
+                    derivation_path: vec![default_derivation_key()],
+                    key_name: "TODO".to_string(),
+                    ecdsa_sign_cycles: None, // use default (is there a problem with prod_key?)
+                },
+                // TODO: chainid
+                1,
             )
             .await
     }

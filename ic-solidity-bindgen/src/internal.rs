@@ -1,6 +1,6 @@
-use ethabi::Token;
-use web3::contract::tokens::{Detokenize, Tokenizable};
-use web3::contract::Error;
+use ic_web3::contract::tokens::{Detokenize, Tokenizable};
+use ic_web3::contract::Error;
+use ic_web3::ethabi::Token;
 
 /// For types which might come up in contracts which are not yet implemented in web3
 pub enum Unimplemented {}
