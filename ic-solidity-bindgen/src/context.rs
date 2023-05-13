@@ -19,26 +19,22 @@ pub trait Context {
 
 struct Web3ContextInner {
     from: Address,
-    secret_key: SafeSecretKey,
     // We are not expecting to interact with the chain frequently,
     // and the websocket transport has problems with ping.
     // So, the Http transport seems like the best choice.
     eth: Eth<ICHttp>,
+    chain_id: u64,
 }
 
 impl Web3Context {
-    pub fn new(
-        url: &str,
-        from: Address,
-        secret_key: &SecretKey,
-    ) -> Result<Self, ic_web3::error::Error> {
+    pub fn new(url: &str, from: Address, chain_id: u64) -> Result<Self, ic_web3::error::Error> {
         let transport = ICHttp::new(url, None)?;
         let web3 = Web3::new(transport);
         let eth = web3.eth();
         let inner = Web3ContextInner {
             eth,
             from,
-            secret_key: secret_key.try_into().unwrap(),
+            chain_id,
         };
         Ok(Self(Arc::new(inner)))
     }
@@ -47,12 +43,11 @@ impl Web3Context {
         self.0.from
     }
 
-    pub(crate) fn secret_key(&self) -> &SecretKey {
-        &self.0.secret_key
-    }
-
     pub(crate) fn eth(&self) -> Eth<ICHttp> {
         self.0.eth.clone()
+    }
+    pub fn chain_id(&self) -> u64 {
+        self.0.chain_id
     }
 }
 

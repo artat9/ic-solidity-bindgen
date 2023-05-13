@@ -57,12 +57,12 @@ pub fn default_derivation_key() -> Vec<u8> {
     ic_cdk::id().as_slice().to_vec()
 }
 
-async fn public_key() -> Result<Vec<u8>, String> {
+async fn public_key(key_name: String) -> Result<Vec<u8>, String> {
     get_public_key(
         None,
         vec![default_derivation_key()],
         // tmp: this should be a random string
-        "dfx_test_key".to_string(),
+        key_name,
     )
     .await
 }
@@ -71,8 +71,8 @@ fn to_ethereum_address(pub_key: Vec<u8>) -> Result<Address, String> {
     pubkey_to_address(&pub_key)
 }
 
-pub async fn ethereum_address() -> Result<Address, String> {
-    let pub_key = public_key().await?;
+pub async fn ethereum_address(key_name: String) -> Result<Address, String> {
+    let pub_key = public_key(key_name).await?;
     to_ethereum_address(pub_key)
 }
 #[async_trait]
@@ -82,10 +82,11 @@ impl SendProvider for Web3Provider {
         &self,
         func: &'static str,
         params: Params,
+        key_name: String,
         options: Option<Options>,
         confirmations: Option<usize>,
     ) -> Result<Self::Out, ic_web3::Error> {
-        let canister_addr = ethereum_address().await?;
+        let canister_addr = ethereum_address(key_name.clone()).await?;
 
         self.contract
             .signed_call_with_confirmations(
@@ -109,11 +110,10 @@ impl SendProvider for Web3Provider {
                 },
                 KeyInfo {
                     derivation_path: vec![default_derivation_key()],
-                    key_name: "TODO".to_string(),
+                    key_name: key_name,
                     ecdsa_sign_cycles: None, // use default (is there a problem with prod_key?)
                 },
-                // TODO: chainid
-                1,
+                self.context.chain_id(),
             )
             .await
     }
