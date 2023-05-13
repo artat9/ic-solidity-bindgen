@@ -24,10 +24,16 @@ struct Web3ContextInner {
     // So, the Http transport seems like the best choice.
     eth: Eth<ICHttp>,
     chain_id: u64,
+    key_name: String,
 }
 
 impl Web3Context {
-    pub fn new(url: &str, from: Address, chain_id: u64) -> Result<Self, ic_web3::error::Error> {
+    pub fn new(
+        url: &str,
+        from: Address,
+        chain_id: u64,
+        key_name: String,
+    ) -> Result<Self, ic_web3::error::Error> {
         let transport = ICHttp::new(url, None)?;
         let web3 = Web3::new(transport);
         let eth = web3.eth();
@@ -35,6 +41,7 @@ impl Web3Context {
             eth,
             from,
             chain_id,
+            key_name,
         };
         Ok(Self(Arc::new(inner)))
     }
@@ -48,6 +55,10 @@ impl Web3Context {
     }
     pub fn chain_id(&self) -> u64 {
         self.0.chain_id
+    }
+
+    pub fn key_name(&self) -> &str {
+        &self.0.key_name
     }
 }
 

@@ -82,11 +82,10 @@ impl SendProvider for Web3Provider {
         &self,
         func: &'static str,
         params: Params,
-        key_name: String,
         options: Option<Options>,
         confirmations: Option<usize>,
     ) -> Result<Self::Out, ic_web3::Error> {
-        let canister_addr = ethereum_address(key_name.clone()).await?;
+        let canister_addr = ethereum_address(self.context.key_name().to_string()).await?;
 
         self.contract
             .signed_call_with_confirmations(
@@ -110,7 +109,7 @@ impl SendProvider for Web3Provider {
                 },
                 KeyInfo {
                     derivation_path: vec![default_derivation_key()],
-                    key_name: key_name,
+                    key_name: self.context.key_name().to_string(),
                     ecdsa_sign_cycles: None, // use default (is there a problem with prod_key?)
                 },
                 self.context.chain_id(),
