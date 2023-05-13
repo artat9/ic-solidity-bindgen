@@ -69,12 +69,12 @@ pub fn abi_from_file(path: impl AsRef<Path>) -> TokenStream {
         }
 
         impl<SolidityBindgenProvider> #struct_name<SolidityBindgenProvider> {
-            pub fn new<Context>(address: ::ic_web3::types::Address, context: &Context) -> Self where Context: ::solidity_bindgen::Context<Provider = SolidityBindgenProvider> {
+            pub fn new<Context>(address: ::ic_web3::types::Address, context: &Context) -> Self where Context: ::ic_solidity_bindgen::Context<Provider = SolidityBindgenProvider> {
                 // Embed ABI into the program
                 let abi = #abi_str;
 
                 // Set up a wrapper so we can make calls
-                let provider = ::solidity_bindgen::Context::provider(context, address, abi.as_bytes());
+                let provider = ::ic_solidity_bindgen::Context::provider(context, address, abi.as_bytes());
                 let provider = ::std::sync::Arc::new(provider);
                 Self {
                     address,
@@ -83,7 +83,7 @@ pub fn abi_from_file(path: impl AsRef<Path>) -> TokenStream {
             }
         }
 
-        impl<SolidityBindgenProvider> #struct_name<SolidityBindgenProvider> where SolidityBindgenProvider: ::solidity_bindgen::SendProvider {
+        impl<SolidityBindgenProvider> #struct_name<SolidityBindgenProvider> where SolidityBindgenProvider: ::ic_solidity_bindgen::SendProvider {
 
             // TODO: This API is not in the spirit of this library
             // (validating params & func at compile time). It may be better
@@ -102,7 +102,7 @@ pub fn abi_from_file(path: impl AsRef<Path>) -> TokenStream {
         }
 
         impl<SolidityBindgenProvider> #struct_name<SolidityBindgenProvider>
-            where SolidityBindgenProvider: ::solidity_bindgen::CallProvider {
+            where SolidityBindgenProvider: ::ic_solidity_bindgen::CallProvider {
                 #(#call_fns)*
         }
     }
@@ -115,7 +115,7 @@ fn param_type(kind: &ParamType) -> (TokenStream, usize) {
         ParamType::Address => (quote! { ::ic_web3::types::Address }, 0),
         ParamType::Bytes => (quote! { ::std::vec::Vec<u8> }, 0),
         ParamType::Int(size) => match size {
-            256 => (quote! { ::solidity_bindgen::internal::Unimplemented }, 0),
+            256 => (quote! { ::ic_solidity_bindgen::internal::Unimplemented }, 0),
             _ => (ident(format!("i{}", size)).to_token_stream(), 0),
         },
         ParamType::Uint(size) => match size {
@@ -130,7 +130,7 @@ fn param_type(kind: &ParamType) -> (TokenStream, usize) {
         ParamType::Array(inner) => {
             let (inner, nesting) = param_type(inner);
             if nesting > 0 {
-                (quote! { ::solidity_bindgen::internal::Unimplemented }, 0)
+                (quote! { ::ic_solidity_bindgen::internal::Unimplemented }, 0)
             } else {
                 (quote! { ::std::vec::Vec<#inner> }, nesting)
             }
@@ -141,7 +141,7 @@ fn param_type(kind: &ParamType) -> (TokenStream, usize) {
             (quote! { [#inner; #len] }, nesting)
         }
         ParamType::Tuple(members) => match members.len() {
-            0 => (quote! { ::solidity_bindgen::internal::Empty }, 1),
+            0 => (quote! { ::ic_solidity_bindgen::internal::Empty }, 1),
             _ => {
                 let members: Vec<_> = members
                     .into_iter()
@@ -185,7 +185,7 @@ pub fn fn_from_abi(function: &Function) -> TokenStream {
         // nesting to 1 or 0 which compiles.
         if nesting + params_nesting > 1 {
             quote! {
-                #name: ::solidity_bindgen::internal::Unimplemented
+                #name: ::ic_solidity_bindgen::internal::Unimplemented
             }
         } else {
             quote! {
@@ -219,14 +219,14 @@ pub fn fn_from_abi(function: &Function) -> TokenStream {
         quote! { SolidityBindgenProvider::Out }
     } else {
         match function.outputs.len() {
-            0 => quote! { ::solidity_bindgen::internal::Empty },
+            0 => quote! { ::ic_solidity_bindgen::internal::Empty },
             1 => {
                 let (t, nesting) = param_type(&function.outputs[0].kind);
                 if nesting < 2 {
                     t
                 } else {
                     quote! {
-                        ::solidity_bindgen::internal::Unimplemented
+                        ::ic_solidity_bindgen::internal::Unimplemented
                     }
                 }
             }
@@ -235,7 +235,7 @@ pub fn fn_from_abi(function: &Function) -> TokenStream {
                     let (t, nesting) = param_type(&o.kind);
                     if nesting != 0 {
                         quote! {
-                            ::solidity_bindgen::internal::Unimplemented
+                            ::ic_solidity_bindgen::internal::Unimplemented
                         }
                     } else {
                         t
