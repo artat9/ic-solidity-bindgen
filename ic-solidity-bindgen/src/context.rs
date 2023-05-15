@@ -1,11 +1,8 @@
-use crate::SafeSecretKey;
 use crate::Web3Provider;
 use ic_web3::api::Eth;
 use ic_web3::transports::ICHttp;
 use ic_web3::types::Address;
 use ic_web3::Web3;
-use secp256k1::key::SecretKey;
-use std::convert::TryInto as _;
 use std::sync::Arc;
 
 /// Common data associated with multiple contracts.
